@@ -7,8 +7,6 @@
 #include <thread.h>
 #include <utility/queue.h>
 
-#include <utility/ostream.h>
-
 __BEGIN_SYS
 
 class Synchronizer_Common
@@ -28,15 +26,11 @@ protected:
     void end_atomic() { Thread::unlock(); }
 
     void sleep() { 
-
-        cout << "sadsad: Lantes";
         Thread * thread = Thread::self();
         thread->suspend();
         unsigned int priority = thread->priority();
         List_Elements::Doubly_Linked_Ordered<Thread *, Thread::Priority> dll = List_Elements::Doubly_Linked_Ordered<Thread *, Thread::Priority>(&thread, priority); 
         suspended_threads.insert(&dll);
-
-        cout << "sadsad: L";
 
         end_atomic();
     } // implicit unlock()
