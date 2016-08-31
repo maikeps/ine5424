@@ -122,7 +122,8 @@ void Thread::suspend()
     } else
         idle(); // implicit unlock()
 
-    unlock();
+    //TODO
+    //unlock();
 }
 
 

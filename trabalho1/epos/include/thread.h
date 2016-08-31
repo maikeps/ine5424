@@ -78,6 +78,10 @@ public:
     void suspend();
     void resume();
 
+
+    //FIXME fun
+    // Queue::Element get_link() { return _link; }
+
     static Thread * volatile self() { return running(); }
     static void yield();
     static void exit(int status = 0);
