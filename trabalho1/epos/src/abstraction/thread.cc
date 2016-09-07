@@ -122,7 +122,7 @@ void Thread::suspend()
     } else
         idle(); // implicit unlock()
 
-    unlock();
+    //unlock();
 }
 
 
@@ -136,7 +136,7 @@ void Thread::resume()
    _state = READY;
    _ready.insert(&_link);
 
-   unlock();
+   //unlock();
 }
 
 

@@ -5,6 +5,7 @@
 
 #include <cpu.h>
 #include <thread.h>
+#include <utility/queue.h>
 
 __BEGIN_SYS
 
@@ -12,6 +13,8 @@ class Synchronizer_Common
 {
 protected:
     Synchronizer_Common() {}
+
+    Ordered_Queue<Thread *, Thread::Priority, List_Elements::Doubly_Linked_Ordered<Thread *, Thread::Priority>> suspended_threads;
 
     // Atomic operations
     bool tsl(volatile bool & lock) { return CPU::tsl(lock); }
@@ -22,9 +25,26 @@ protected:
     void begin_atomic() { Thread::lock(); }
     void end_atomic() { Thread::unlock(); }
 
-    void sleep() { Thread::yield(); } // implicit unlock()
-    void wakeup() { end_atomic(); }
-    void wakeup_all() { end_atomic(); }
+    void sleep() {
+        Thread * thread = Thread::self();
+        thread->suspend();
+        unsigned int priority = thread->priority();
+        List_Elements::Doubly_Linked_Ordered<Thread *, Thread::Priority> dll = List_Elements::Doubly_Linked_Ordered<Thread *, Thread::Priority>(&thread, priority);
+        suspended_threads.insert(&dll);
+        end_atomic();
+    } // implicit unlock()
+    void wakeup() {
+        Thread * thread = *(suspended_threads.remove()->object());
+        thread->resume();
+        end_atomic();
+    }
+    void wakeup_all() {
+        while(suspended_threads.size() > 0) {
+            Thread * thread = *(suspended_threads.remove()->object());
+            thread->resume();
+        }
+        end_atomic();
+    }
 };
 
 __END_SYS
