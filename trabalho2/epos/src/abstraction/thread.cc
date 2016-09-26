@@ -76,9 +76,9 @@ int Thread::join()
 
     db<Thread>(TRC) << "Thread::join(this=" << this << ",state=" << _state << ")" << endl;
 
-    if(_state != FINISHING)
-        //yield(); // implicit unlock()
-        this->finished.wait();
+    if(_state != FINISHING) {    
+        _running->sleep(&_joined);
+    }
 
     unlock();
 
@@ -173,8 +173,7 @@ void Thread::exit(int status)
 
     db<Thread>(TRC) << "Thread::exit(status=" << status << ") [running=" << running() << "]" << endl;
 
-    this->finished.wakeup_all();
-
+    wakeup_all(&(_running->_joined));
     while(_ready.empty() && !_suspended.empty())
         idle(); // implicit unlock();
 
