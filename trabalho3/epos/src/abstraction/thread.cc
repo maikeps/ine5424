@@ -120,11 +120,12 @@ void Thread::suspend()
 
     if((_running == this) && !_ready.empty()) {
         _running = _ready.remove()->object();
-        _running->_state = RUNNING;
+    } else{
+        _running = _idle;
+    }
+    _running->_state = RUNNING;
 
-        dispatch(this, _running);
-    } else
-        idle(); // implicit unlock()
+    dispatch(this, _running);
 
     unlock();
 }
@@ -151,17 +152,18 @@ void Thread::yield()
 
     db<Thread>(TRC) << "Thread::yield(running=" << _running << ")" << endl;
 
+    Thread * prev = _running;
+    prev->_state = READY;
+    _ready.insert(&prev->_link);
+
     if(!_ready.empty()) {
-        Thread * prev = _running;
-        prev->_state = READY;
-        _ready.insert(&prev->_link);
+        _running = _ready.remove()->object();        
+    } else{
+       _running = _idle;
+    }
+    _running->_state = RUNNING;
 
-        _running = _ready.remove()->object();
-        _running->_state = RUNNING;
-
-        dispatch(prev, _running);
-    } else
-        idle();
+    dispatch(prev, _running);
 
     unlock();
 }
@@ -174,18 +176,19 @@ void Thread::exit(int status)
     db<Thread>(TRC) << "Thread::exit(status=" << status << ") [running=" << running() << "]" << endl;
 
     wakeup_all(&(_running->_joined));
-    while(_ready.empty() && !_suspended.empty())
-        idle(); // implicit unlock();
-
-    lock();
+    Thread * prev = _running;
+    prev->_state = FINISHING;
+    *reinterpret_cast<int *>(prev->_stack) = status;
 
     if(!_ready.empty()) {
-        Thread * prev = _running;
-        prev->_state = FINISHING;
-        *reinterpret_cast<int *>(prev->_stack) = status;
-
         _running = _ready.remove()->object();
         _running->_state = RUNNING;
+
+        dispatch(prev, _running);
+    } else if (!_suspended.empty())
+    {
+        _running = _idle;
+        _running->state = RUNNING;
 
         dispatch(prev, _running);
     } else {
@@ -209,15 +212,16 @@ void Thread::sleep(Queue * q)
     // lock() must be called before entering this method
     assert(locked());
 
-    while(_ready.empty())
-        idle();
-
     Thread * prev = running();
     prev->_state = WAITING;
     prev->_waiting = q;
     q->insert(&prev->_link);
 
-    _running = _ready.remove()->object();
+    if(!_ready.empty())
+        _running = _ready.remove()->object();
+    else
+        _running = _idle;
+
     _running->_state = RUNNING;
 
     dispatch(prev, _running);
