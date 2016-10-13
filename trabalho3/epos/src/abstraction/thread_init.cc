@@ -17,6 +17,8 @@ void Thread::init()
     // neither by IDLE (which has a lower priority)
     if(preemptive)
         _timer = new (kmalloc(sizeof(Scheduler_Timer))) Scheduler_Timer(QUANTUM, time_slicer);
+
+    _idle = new (kmalloc(sizeof(Thread))) Thread(&idle);
 }
 
 __END_SYS

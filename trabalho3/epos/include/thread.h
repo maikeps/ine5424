@@ -120,7 +120,7 @@ private:
     static Queue _ready;
     static Queue _suspended;
     Queue _joined;
-    static Thread _idle;
+    static Thread * volatile _idle;
 };
 
 
