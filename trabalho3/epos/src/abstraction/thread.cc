@@ -321,8 +321,8 @@ int Thread::idle()
     db<Thread>(INF) << "There are no runnable threads at the moment!" << endl;
     db<Thread>(INF) << "Halting the CPU ..." << endl;
 
-    CPU::int_enable();
     while(true) {
+        CPU::int_enable();
         CPU::halt();
     }
     return 0;
