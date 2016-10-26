@@ -104,6 +104,18 @@ void Thread::pass()
     unlock();
 }
 
+void Thread::priority(const Priority & p) {
+    this->_link.rank(p);
+
+    if(this->_state == READY && preemptive) {
+        _ready.remove(this);
+        _ready.insert(&_link);
+    }
+}
+
+void Thread::resetPriority() {
+    this->_link.rank(this->basePriority);
+}
 
 void Thread::suspend()
 {

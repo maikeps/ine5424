@@ -21,10 +21,18 @@ void Mutex::lock()
     db<Synchronizer>(TRC) << "Mutex::lock(this=" << this << ")" << endl;
 
     begin_atomic();
-    if(tsl(_locked))
+    if(tsl(_locked)) {
+        Thread::Priority p = Thread::self()->priority();
+        if (this->resourceHolder->priority() < p) {
+            this->resourceHolder->priority(p);
+        }
+
         sleep(); // implicit end_atomic()
-    else
+    }
+    else {
+        this->resourceHolder = Thread::self();
         end_atomic();
+    }
 }
 
 
@@ -33,6 +41,9 @@ void Mutex::unlock()
     db<Synchronizer>(TRC) << "Mutex::unlock(this=" << this << ")" << endl;
 
     begin_atomic();
+
+    this->resourceHolder->resetPriority();
+
     if(_queue.empty()) {
         _locked = false;
         end_atomic();

@@ -18,6 +18,7 @@ public:
 
 private:
     volatile bool _locked;
+    Thread* resourceHolder;
 };
 
 __END_SYS

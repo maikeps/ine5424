@@ -72,6 +72,7 @@ public:
 
     const volatile Priority & priority() const { return _link.rank(); }
     void priority(const Priority & p);
+    void resetPriority();
 
     int join();
     void pass();
@@ -119,6 +120,8 @@ private:
     static Thread * volatile _running;
     static Queue _ready;
     static Queue _suspended;
+
+    Priority basePriority; // prioridade estática
 };
 
 
@@ -126,6 +129,8 @@ template<typename ... Tn>
 inline Thread::Thread(int (* entry)(Tn ...), Tn ... an)
 : _state(READY), _waiting(0), _link(this, NORMAL)
 {
+    this->basePriority = NORMAL;
+
     constructor_prolog(STACK_SIZE);
     _context = CPU::init_stack(_stack + STACK_SIZE, &__exit, entry, an ...);
     constructor_epilog(entry, STACK_SIZE);
@@ -135,6 +140,8 @@ template<typename ... Tn>
 inline Thread::Thread(const Configuration & conf, int (* entry)(Tn ...), Tn ... an)
 : _state(conf.state), _waiting(0), _link(this, conf.priority)
 {
+    this->basePriority = conf.priority;
+
     constructor_prolog(conf.stack_size);
     _context = CPU::init_stack(_stack + conf.stack_size, &__exit, entry, an ...);
     constructor_epilog(entry, conf.stack_size);
